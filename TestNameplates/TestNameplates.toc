@@ -1,0 +1,9 @@
+## Interface: 30300
+## Title: |cFF22ffaaTestNameplates|r
+## Version: 0.69.420
+## Author: mrcatsoul
+## Notes: |cFF22ddccDefault nameplates test. By some random guy (tg|ds|yt:mrcatsoul)|r
+
+utf8data.lua
+utf8.lua
+TestNameplates.lua
