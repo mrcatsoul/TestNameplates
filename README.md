@@ -27,8 +27,8 @@ For those who are going to test this:
 4) enable Lua errors (Interface->Help->Lua script errors), if something goes wrong, it will be visible, if possible, compare with the default settings in crowds and provide feedback/report, you can even make a video, just out of interest
 
 Links:
-Scaler patch: https://mega.nz/file/9AtHmQqa#Y23_Iu9zWJ7XNT1ksnDn3UsWYaQxuuNiTxzzfDhjs4w
-Awesomewotlk: https://github.com/FrostAtom/awesome_wotlk
-Archive with the experiment, install as a regular addon: https://github.com/mrcatsoul/TestNameplates/archive/refs/heads/main.zip
+1) Scaler patch: https://mega.nz/file/9AtHmQqa#Y23_Iu9zWJ7XNT1ksnDn3UsWYaQxuuNiTxzzfDhjs4w
+2) Awesomewotlk: https://github.com/FrostAtom/awesome_wotlk
+3) Archive with the experiment, install as a regular addon: https://github.com/mrcatsoul/TestNameplates/archive/refs/heads/main.zip
 
-https://www.youtube.com/watch?v=ce8eZfgMphs
+Small demo: https://www.youtube.com/watch?v=ce8eZfgMphs
