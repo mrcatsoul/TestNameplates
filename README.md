@@ -1,4 +1,4 @@
-A micro-experiment with default nameplates.
+(auto translation) A micro-experiment with default nameplates.
 
 
 The goal was to make everything as lightweight as possible, without adding anything extra to the code that could lead to FPS loss, leaving the default frames almost untouched, removing unnecessary clutter, minimizing the screen space occupied by frames, and maximizing information extraction.
