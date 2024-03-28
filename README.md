@@ -9,7 +9,7 @@ No extra frames/textures/texts were created in the code: this should improve per
 
 The functionality is minimal for now:
 
-0) the main task is completed - the default UI is reduced several times
+0) the main task is completed - the default nameplates reduced several times
 1) combat state icon in the player name text
 2) icon on those who targeted us, in the player name text
 3) hiding the health bar and cast bar if health is full for NPCs and friendly players; for friendly/neutral NPCs, it is always hidden if they are not targeted/focused/hovered over/have a mark/casting a mark
