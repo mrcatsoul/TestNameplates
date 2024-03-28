@@ -31,4 +31,4 @@ Scaler patch: https://mega.nz/file/9AtHmQqa#Y23_Iu9zWJ7XNT1ksnDn3UsWYaQxuuNiTxzz
 Awesomewotlk: https://github.com/FrostAtom/awesome_wotlk
 Archive with the experiment, install as a regular addon: https://github.com/mrcatsoul/TestNameplates/archive/refs/heads/main.zip
 
-![youtube](https://www.youtube.com/watch?v=ce8eZfgMphs)
+https://www.youtube.com/watch?v=ce8eZfgMphs
