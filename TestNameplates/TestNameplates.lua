@@ -2,7 +2,7 @@ local addon_name = ...
 local lastChildren, WorldFrame, C_NamePlate = 0, WorldFrame, C_NamePlate
 local UnitThreatSituation, UnitGUID, UnitAffectingCombat, UnitIsPlayer, UnitClass = UnitThreatSituation, UnitGUID, UnitAffectingCombat, UnitIsPlayer, UnitClass
 local playerGuid = UnitGUID("player")
-local GetStaticPlateIcon, playerTargetGuid
+local GetStaticPlateIcon, playerTargetGuid, InDungeon, InRaidDungeon, inHeroicMode, InRaidGroup, ShowClassColorInNameplate
 
 local function utf8sub(string, i, dots)
   if not string then return end
@@ -132,17 +132,14 @@ local function npOnUpdate(self,...)
             self.class = select(2, UnitClass(self.nameplateToken))
           end
           if not self.isPlayer then
-            self.isPlayer = UnitIsPlayer(self.nameplateToken)
+            self.isPlayer = UnitIsPlayer(self.nameplateToken) and true or false
           end
       end
       
+      local curName = nameRegion:GetText()
       
-      
-      if (not self.origSavedName) or self.origSavedName=="" or self.origSavedName==STRING_SCHOOL_UNKNOWN then
-        local origSavedName = nameRegion:GetText()
-        if origSavedName then
-          self.origSavedName = origSavedName
-        end
+      if (not self.origSavedName) and curName and curName~=STRING_SCHOOL_UNKNOWN then
+          self.origSavedName = curName
       end
     
       shieldedRegion:Hide()  
@@ -167,11 +164,13 @@ local function npOnUpdate(self,...)
   --print(nameRegion:GetDrawLayer(),overlayRegion:GetDrawLayer(),castbarOverlay:GetDrawLayer())
 
 
-    local nameColored,borderColored,unitReaction,forceShow,forceHide,thiccBorder
+    local nameColored,borderColored,unitReaction,forceShow,forceHide,thiccBorder,hpBarColorByClass,isFriendNpc,isNpc,isPlayer
     local r, g, b, a = healthBar:GetStatusBarColor()
     local _, _, _, an = nameRegion:GetTextColor()
   local newName = self.origSavedName or ""
-  local curName = nameRegion:GetText()
+  isPlayer = self.isPlayer and self.isPlayer==true 
+  isNpc = self.isPlayer==false
+  --print(isPlayer,isNpc)
   
   if self.origSavedName and #self.origSavedName:gsub('[\128-\191]', '') > 12 then
     newName = Abbrev(self.origSavedName)
@@ -196,42 +195,73 @@ local function npOnUpdate(self,...)
     --print(self.nameplateToken,playerGuid,UnitGUID(self.nameplateToken.."target"))
   end
   
-  if curName~=newName then
+  if --[[self.origSavedName and]] curName and curName~=newName then
     nameRegion:SetText(newName)
   end
 
     --print(curName,newName)
 
-    if self.isPlayer and self.class then
+    if isPlayer and self.class and ShowClassColorInNameplate=="0" then
       local colorHex = classColors[self.class] or "ffdddd"
       local r, g, b = hexToDecimal(colorHex)
       local desaturatedR, desaturatedG, desaturatedB = desaturateColor(r, g, b, 0.5)
       local brightenedR, brightenedG, brightenedB = brightenColor(desaturatedR, desaturatedG, desaturatedB, 2)
       nameRegion:SetTextColor(brightenedR, brightenedG, brightenedB, an)
       nameColored=1
-    end
+    else
     
+    end
+    --print(ShowClassColorInNameplate)
     -- reaction
-    if g + b == 0 then --враждебный
-      --healthBar:SetStatusBarColor(0.7, 0.1, 0.1, a)
+    if (self.nameplateToken and ShowClassColorInNameplate=="1" and self.class and isPlayer) then -- цвет по классу
+      --print('testsdasd')
+      unitReaction = UnitReaction(self.nameplateToken, "player")
+      local colorHex = classColors[self.class] or "ffdddd"
+      local r, g, b = hexToDecimal(colorHex)
+      healthBar:SetStatusBarColor(r, g, b)--test
+      hpBarColorByClass=1
+    elseif (g + b == 0) or (r>(g+b) and (r-g)>0.05) then --враждебный
       if not nameColored then nameRegion:SetTextColor(0.8, 0.7, 0.7, an) end
-      unitReaction = 4   -- enemy
-    elseif r + b == 0 then --дружественный NPC
-      --healthBar:SetStatusBarColor(0.2, 0.7, 0.2, a)
+      unitReaction = 1   -- enemy
+      --print('enemy')
+      --print(r, g, b)
+      healthBar:SetStatusBarColor(0.8, 0.1, 0.1)--test
+    elseif (r + b == 0) or (g>(r+b) and (g-r)>0.05) then --дружественный NPC
       if not nameColored then nameRegion:SetTextColor(0.7, 0.8, 0.7, an) end
-      unitReaction = 3   -- friend
-    elseif r + g == 0 then --Дружественный игрок
-      --healthBar:SetStatusBarColor(0.2, 0.3, 0.8, a)
+      unitReaction = 5   -- friend
+      healthBar:SetStatusBarColor(0.2, 0.8, 0.2)--test
+      isFriendNpc=1
+    elseif (r + g == 0) or (b>(r+g) and (b-r)>0.05) then --Дружественный игрок
       if not nameColored then nameRegion:SetTextColor(0.6, 0.6, 0.8, an) end
-      unitReaction = 2                      -- friend
-    elseif 2 - (r + g) < 0.05 and b == 0 then -- нейтральный игрок или NPC -- частичный кусок кода с математикой от дримлолза
-      --healthBar:SetStatusBarColor(0.8, 0.8, 0.3, a) 
+      unitReaction = 5                      -- friend
+      healthBar:SetStatusBarColor(0.2, 0.3, 0.8)--test
+    elseif (2 - (r + g) < 0.05 and b == 0) or ((r+g)>1) then -- нейтральный игрок или NPC -- частичный кусок кода с математикой от дримлолза
       if not nameColored then nameRegion:SetTextColor(0.8, 0.8, 0.6, an) end
-      unitReaction = 1 -- neutral
+      unitReaction = 4 -- neutral
+      healthBar:SetStatusBarColor(0.8, 0.8, 0.2)--test
+      --print('neutral')
     else                 -- цвет класса
-      --healthBar:SetStatusBarColor(r * 0.75, g * 0.75, b * 0.75, a)
       if not nameColored then nameRegion:SetTextColor(r * 0.7, g * 0.7, b * 0.7, an) end
       unitReaction = 0 -- class color
+    end
+    
+    if not unitReaction then 
+      unitReaction = 0 
+      print('unitReaction',unitReaction) 
+    end
+    
+    if not nameColored and hpBarColorByClass then
+      if unitReaction<=3 then
+        nameRegion:SetTextColor(0.8, 0.2, 0, an)
+      elseif unitReaction==4 then
+        nameRegion:SetTextColor(0.8, 0.8, 0.4, an)
+      elseif isFriendNpc then
+        nameRegion:SetTextColor(0.7, 0.8, 0.7, an)
+      elseif unitReaction>=5 then
+        nameRegion:SetTextColor(0.6, 0.6, 0.8, an)
+      else
+        nameRegion:SetTextColor(1, 0.9, 0.9, an)
+      end
     end
     
     local isMyTarget,isMyFocus,isMouseover
@@ -258,7 +288,7 @@ local function npOnUpdate(self,...)
 
     
     if (isMyTarget or isMouseover) then
-      if (unitReaction==2 or unitReaction==3) then
+      if (unitReaction>=5) then -- friend
         overlayRegion:SetVertexColor(0.5, 0.9, 0.9)
         castbarOverlay:SetVertexColor(0.5, 0.9, 0.9)
         thiccBorder=1
@@ -270,7 +300,7 @@ local function npOnUpdate(self,...)
           -- --print('sadasdsad')
         -- end
         --print('tar/mo')
-      elseif unitReaction==4 then
+      elseif unitReaction<=3 then --enemy
         overlayRegion:SetVertexColor(0, 0.7, 0.7)
         castbarOverlay:SetVertexColor(0, 0.7, 0.7)
         thiccBorder=1
@@ -301,7 +331,7 @@ local function npOnUpdate(self,...)
     
 
     if not borderColored then
-      if ((isTargetingMe and unitReaction==4) or (not self.isPlayer and self.nameplateToken and UnitThreatSituation("player", self.nameplateToken) )) then -- угроза или враг таргетит нас
+      if ((isTargetingMe and unitReaction<=3) or (isNpc and self.nameplateToken and UnitThreatSituation("player", self.nameplateToken) )) then -- угроза или враг таргетит нас
         -- if overlayRegion:IsShown() and overlayRegion:GetTexture()~="Interface\\addons\\"..addon_name.."\\Nameplate-Border-orange" then
           -- overlayRegion:SetTexture("Interface\\addons\\"..addon_name.."\\Nameplate-Border-orange")
         -- end
@@ -326,7 +356,7 @@ local function npOnUpdate(self,...)
         -- end
         if raidIcon:IsShown() then
           forceShow=1
-        elseif not forceShow and ((not self.isPlayer and unitReaction <=3) or ((not self.isPlayer or (self.isPlayer and unitReaction <=3)) and hpCur==hpMax)) then -- прячем хп там де оно не нада
+        elseif not forceShow and ((isNpc and unitReaction >=5) or ((isNpc or (isPlayer and unitReaction >=5)) and hpCur==hpMax) or (isPlayer and InDungeon)) then -- прячем хп там де оно не нада
           if not (self.nameplateToken and UnitAffectingCombat(self.nameplateToken)) then
             healthBar:Hide()
             overlayRegion:Hide()
@@ -344,6 +374,11 @@ local function npOnUpdate(self,...)
             --spellIconRegion:SetAlpha(0)
             --castBar:SetAlpha(0)
           end
+          --print(InDungeon)
+          if InDungeon then
+            nameRegion:Hide()
+            --print('nameRegion:Hide')
+          end
         else
           forceShow=1
         end
@@ -357,6 +392,7 @@ local function npOnUpdate(self,...)
         --local isMyTarget = playerTargetGuid and self.guid and self.guid == playerTargetGuid
         healthBar:Show()
         overlayRegion:Show()
+        nameRegion:Show()
         if isMyTarget then
           alpha=0.9
         elseif not playerTargetGuid then
@@ -367,6 +403,7 @@ local function npOnUpdate(self,...)
     elseif forceHide then
         alpha=0
         overlayRegion:Hide()
+        --nameRegion:Hide()
     elseif not playerTargetGuid then
         alpha=0.8
     else
@@ -379,7 +416,7 @@ local function npOnUpdate(self,...)
       nameRegion:SetAlpha(alpha==0 and 1 or alpha)
       
       -- скрыто хп? скрываем и каст но ток альфа канал а то с прятками типа хайда всё сложна
-      if healthBar:GetAlpha()<0.1 or not healthBar:IsShown() then
+      if healthBar:GetAlpha()<0.01 or not healthBar:IsShown() then
         spellIconRegion:SetAlpha(0)
         castbarOverlay:SetAlpha(0)
         castBar:SetAlpha(0)
@@ -392,24 +429,28 @@ local function npOnUpdate(self,...)
     
     -- тексты менять ток после show или проверка на шовн ваще не нужна??
     if thiccBorder==1 then
-        if overlayRegion:IsShown() and overlayRegion:GetTexture()~="Interface\\addons\\"..addon_name.."\\Nameplate-Border-white" then
+        if --[[overlayRegion:IsShown() and]] overlayRegion:GetTexture()~="Interface\\addons\\"..addon_name.."\\Nameplate-Border-white" then
           overlayRegion:SetTexture("Interface\\addons\\"..addon_name.."\\Nameplate-Border-white")
           --print(1,borderColored)
         end
-        if castbarOverlay:IsShown() and castbarOverlay:GetTexture()~="Interface\\addons\\"..addon_name.."\\cast-top-white" then
+        if --[[castbarOverlay:IsShown() and]] castbarOverlay:GetTexture()~="Interface\\addons\\"..addon_name.."\\cast-top-white" then
           castbarOverlay:SetTexture("Interface\\addons\\"..addon_name.."\\cast-top-white")
           --print('cast-top-black')
         end
     else
-        if overlayRegion:IsShown() and overlayRegion:GetTexture()~="Interface\\addons\\"..addon_name.."\\Nameplate-Border-white-thin" then
+        if --[[overlayRegion:IsShown() and]] overlayRegion:GetTexture()~="Interface\\addons\\"..addon_name.."\\Nameplate-Border-white-thin" then
           overlayRegion:SetTexture("Interface\\addons\\"..addon_name.."\\Nameplate-Border-white-thin")
           --print(1,borderColored)
         end
-        if castbarOverlay:IsShown() and castbarOverlay:GetTexture()~="Interface\\addons\\"..addon_name.."\\cast-top-white-thin" then
+        if --[[castbarOverlay:IsShown() and]] castbarOverlay:GetTexture()~="Interface\\addons\\"..addon_name.."\\cast-top-white-thin" then
           castbarOverlay:SetTexture("Interface\\addons\\"..addon_name.."\\cast-top-white-thin")
           --print('cast-top-black')
         end
     end
+    
+    --if castBar:IsShown() then
+    --  print(castbarOverlay:GetTexture())
+    --end
     
     
         if npHBPoints[self] then
@@ -680,6 +721,15 @@ local function FindNameplates()
   end
 end
 
+local function updateZoneAndRaidInfo()
+  local isInstance, InstanceType = IsInInstance()
+  InDungeon = InstanceType == "raid" or InstanceType == "party"
+  print(InDungeon,InstanceType)
+  InRaidDungeon = InstanceType == "raid"
+  inHeroicMode = select(6,GetInstanceInfo())==1
+  InRaidGroup = (GetRealNumRaidMembers() > 0 or UnitInRaid('player'))
+end
+
 local f=CreateFrame('frame')
 f:SetScript('OnUpdate', function()
   FindNameplates()
@@ -693,12 +743,21 @@ end
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
+f:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+f:RegisterEvent("ZONE_CHANGED")
+f:RegisterEvent("CVAR_UPDATE")
 
 f:SetScript("OnEvent", function(self, event, ...)
   if event == "PLAYER_ENTERING_WORLD" then
     GetStaticPlateIcon = _G.GetStaticPlateIcon
     f:UnregisterEvent("PLAYER_ENTERING_WORLD")
     playerGuid=UnitGUID("player")
+    ShowClassColorInNameplate=GetCVar("ShowClassColorInNameplate")
+    updateZoneAndRaidInfo()
+  elseif event == "CVAR_UPDATE" and arg1=="SHOW_CLASS_COLOR_IN_V_KEY" then
+    ShowClassColorInNameplate=arg2
+  elseif (event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED") then
+    updateZoneAndRaidInfo()
   elseif event == "ADDON_LOADED" and arg1==addon_name then
     GetStaticPlateIcon = _G.GetStaticPlateIcon
     f:UnregisterEvent("ADDON_LOADED")
@@ -733,4 +792,8 @@ f:SetScript("OnEvent", function(self, event, ...)
     end
   end
 end)
+
+
+
+
 
